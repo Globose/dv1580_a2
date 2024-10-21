@@ -1,48 +1,49 @@
-# Compiler and Linking Variables
+# CCiler and Linking Variables
 CC = gcc
-CFLAGS = -Wall -fPIC
-LIB_NAME = libmemory_manager.so
+FLAGS = -Wall -fPIC -g
+MM_LIB = libmemory_manager.so
+MM_L = lmemory_manager
 
 # Source and Object Files
-SRC = memory_manager.c
-OBJ = $(SRC:.c=.o)
+MM_C = memory_manager.c
+MM_O = $(MM_C:.c=.o)
+
+LL_C = linked_list.c
+LL_O = $(LL_C:.c=.o)
+
+TEST_MM = test_memory_manager
+TEST_LL = test_linked_list
 
 # Default target
 all: mmanager list test_mmanager test_list
+	@echo "Make all built"
 
-# Rule to create the dynamic library
-$(LIB_NAME): $(OBJ)
-	$(CC) -shared -o $@ $(OBJ)
+# Rule to create libmemory_manager.so
+$(MM_LIB): $(MM_O)
+	@$(CC) -shared -o $@ $(MM_O)
 
-# Rule to compile source files into object files
+# Generic rule to CCile source files into object files
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 # Build the memory manager
-mmanager: $(LIB_NAME)
+mmanager: libmemory_manager.so
+
+# Build the memory manager with custom malloc etc.
+mmanager_custom: libmymalloc.so
 
 # Build the linked list
-list: linked_list.o
+list: $(LL_O)
 
 # Test target to run the memory manager test program
-test_mmanager: $(LIB_NAME)
-	$(CC) -o test_memory_manager test_memory_manager.c -L. -lmemory_manager
+test_mmanager: $(MM_LIB)
+	@$(CC) -o $(TEST_MM) $(TEST_MM).c -lm -L. -$(MM_L)
 
 # Test target to run the linked list test program
-test_list: $(LIB_NAME) linked_list.o
-	$(CC) -o test_linked_list linked_list.c test_linked_list.c -L. -lmemory_manager
-	
-#run tests
-run_tests: run_test_mmanager run_test_list
-	
-# run test cases for the memory manager
-run_test_mmanager:
-	./test_memory_manager
-
-# run test cases for the linked list
-run_test_list:
-	./test_linked_list
+test_list: $(MM_LIB) linked_list.o
+	@$(CC) -o $(TEST_LL) $(LL_C) $(TEST_LL).c -lm -L. -$(MM_L)
 
 # Clean target to clean up build files
 clean:
-	rm -f $(OBJ) $(LIB_NAME) test_memory_manager test_linked_list linked_list.o
+	@rm -f $(MM_O) $(MM_LIB) $(LL_O) $(TEST_MM) $(TEST_LL)
+	@echo "Files removed"
