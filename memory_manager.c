@@ -10,7 +10,7 @@ typedef struct MemoryBlock{
 
 static void* m_block;
 static size_t m_size;
-static pthread_mutex_t lock;
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static MemoryBlock* first_block;
 
 /**
@@ -58,22 +58,6 @@ void merge_mem(MemoryBlock* block1, MemoryBlock* block2){
 }
 
 /**
- * @brief  Searches for a matching memory block
- * @param  block     Pointer to the memory block ptr.
- * @return MemoryBlock*     Pointer to the memory block.
- * @note    - Returns NULL if no matching block is found.
- */
-
-MemoryBlock* get_block(void* block){
-    MemoryBlock * current_block = first_block;
-    while (current_block != NULL && current_block->ptr != block){
-        current_block = current_block->next;
-    }
-    if (current_block->ptr != block || current_block == NULL) return NULL;
-    return current_block;
-}
-
-/**
  * @brief  Initializes the memory manager with a specified size of memory pool.
  * @param  size     Size of memory pool.
  * @note - If size <0, no pool will be allocated. If size=0 an empty pool will be created.
@@ -88,26 +72,36 @@ void mem_init(size_t size){
 /**
  * @brief  Allocates a block of memory of the specified size.
  * @param  size Size of memory block.
- * @return void*    A pointer to the block.
+ * @return void*  A pointer to the block.
  * @note
- * - If memory allocation fails it will return NULL
+ * - No pthread_lock used
  */
-void* mem_alloc(size_t size){
-    // size = (size+7)&~7;
+void* internal_mem_alloc(size_t size){
     MemoryBlock* current_block = first_block;
-
-    pthread_mutex_lock(&lock);
     while (current_block != NULL && (current_block->free != 1 || current_block->size < size)){
         current_block = current_block->next;
     }
+
     if (current_block == NULL){
         pthread_mutex_unlock(&lock);
         return NULL;  
     } 
     split_mem(current_block, size);
-
-    pthread_mutex_unlock(&lock);
     return current_block->ptr;
+}
+
+/**
+ * @brief  Allocates a block of memory of the specified size.
+ * @param  size Size of memory block.
+ * @return void*    A pointer to the block.
+ * @note
+ * - If memory allocation fails it will return NULL
+ */
+void* mem_alloc(size_t size){
+    pthread_mutex_lock(&lock);
+    void* ptr = internal_mem_alloc(size);
+    pthread_mutex_unlock(&lock);
+    return ptr;
 }
 
 /**
@@ -120,11 +114,15 @@ void mem_free(void* block){
     if (block == NULL) return;
 
     pthread_mutex_lock(&lock);
-    MemoryBlock * current_block = get_block(block);
-    if (current_block == NULL){
+    MemoryBlock * current_block = first_block;
+    while (current_block != NULL && current_block->ptr != block){
+        current_block = current_block->next;
+    }
+
+    if (current_block == NULL || current_block->ptr != block){
         pthread_mutex_unlock(&lock);
         return;
-    } 
+    }
     current_block->free = 1;
     merge_mem(current_block, current_block->next);
     merge_mem(current_block->prev, current_block);
@@ -141,10 +139,13 @@ void mem_free(void* block){
  */
 
 void* mem_resize(void* block, size_t size){
-    size = (size+7)&~7;
     pthread_mutex_lock(&lock);
-    MemoryBlock* current_block = get_block(block);
-    if (current_block == NULL){
+    MemoryBlock * current_block = first_block;
+    while (current_block != NULL && current_block->ptr != block){
+        current_block = current_block->next;
+    }
+
+    if (current_block == NULL || current_block->ptr != block){
         pthread_mutex_unlock(&lock);
         return NULL;
     } 
@@ -159,7 +160,7 @@ void* mem_resize(void* block, size_t size){
         return_ptr = current_block->ptr;   
     }
     else{
-        void* ptr = mem_alloc(size);
+        void* ptr = internal_mem_alloc(size);
         if (ptr == NULL){
             current_block->free = 0;
         } 
@@ -171,7 +172,6 @@ void* mem_resize(void* block, size_t size){
     pthread_mutex_unlock(&lock);
     return return_ptr;
 }
-
 
 /**
  * @brief  Frees up the memory pool
