@@ -77,8 +77,8 @@ void list_insert_after(Node* prev_node, int data){
 void list_insert_before(Node** head, Node* next_node, int data){
     if (head == NULL) return;
     Node* prev_node = NULL;
-    Node* node = *head;
     pthread_mutex_lock(&lock);
+    Node* node = *head;
     while(node != NULL){
         if (node == next_node){
             Node* new_node = get_new_node(data, node);
@@ -140,8 +140,8 @@ void list_delete(Node** head, int data){
  */
 Node* list_search(Node** head, int data){
     if (head == NULL) return NULL;
-    Node*node = *head;
     pthread_mutex_lock(&lock);
+    Node*node = *head;
     while(node != NULL && node->data != data){
         node = node->next;
     }

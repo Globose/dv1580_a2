@@ -29,9 +29,6 @@ $(MM_LIB): $(MM_O)
 # Build the memory manager
 mmanager: libmemory_manager.so
 
-# Build the memory manager with custom malloc etc.
-mmanager_custom: libmymalloc.so
-
 # Build the linked list
 list: $(LL_O)
 
