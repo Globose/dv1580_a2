@@ -1,6 +1,7 @@
 # CCiler and Linking Variables
 CC = gcc
-FLAGS = -Wall -fPIC -g
+CFLAGS = -Wall -fPIC
+LFLAGS = -pthread -lm
 MM_LIB = libmemory_manager.so
 MM_L = lmemory_manager
 
@@ -20,7 +21,7 @@ all: mmanager list test_mmanager test_list
 
 # Rule to create libmemory_manager.so
 $(MM_LIB): $(MM_O)
-	@$(CC) -shared -o $@ $(MM_O)
+	@$(CC) -shared -o $@ $(MM_O) $(LFLAGS)
 
 # Generic rule to CCile source files into object files
 %.o: %.c
@@ -34,11 +35,11 @@ list: $(LL_O)
 
 # Test target to run the memory manager test program
 test_mmanager: $(MM_LIB)
-	@$(CC) -o $(TEST_MM) $(TEST_MM).c -lm -L. -$(MM_L)
+	@$(CC) -o $(TEST_MM) $(TEST_MM).c -lm -L. -$(MM_L) $(LFLAGS)
 
 # Test target to run the linked list test program
 test_list: $(MM_LIB) linked_list.o
-	@$(CC) -o $(TEST_LL) $(LL_C) $(TEST_LL).c -lm -L. -$(MM_L)
+	@$(CC) -o $(TEST_LL) $(LL_C) $(TEST_LL).c -lm -L. -$(MM_L) $(LFLAGS)
 
 # Clean target to clean up build files
 clean:
