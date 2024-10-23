@@ -35,11 +35,11 @@ list: $(LL_O)
 
 # Test target to run the memory manager test program
 test_mmanager: $(MM_LIB)
-	@$(CC) -o $(TEST_MM) $(TEST_MM).c -lm -L. -$(MM_L) $(LFLAGS)
+	@$(CC) -o $(TEST_MM) $(TEST_MM).c -lm -L. -$(MM_L) $(LFLAGS) -Wl,-rpath=.
 
 # Test target to run the linked list test program
 test_list: $(MM_LIB) linked_list.o
-	@$(CC) -o $(TEST_LL) $(LL_C) $(TEST_LL).c -lm -L. -$(MM_L) $(LFLAGS)
+	@$(CC) -o $(TEST_LL) $(LL_C) $(TEST_LL).c -lm -L. -$(MM_L) $(LFLAGS) -Wl,-rpath=.
 
 # Clean target to clean up build files
 clean:
